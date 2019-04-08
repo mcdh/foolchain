@@ -1,0 +1,236 @@
+import java.text.SimpleDateFormat
+
+import org.gradle.internal.xml.XmlTransformer.XmlProviderImpl
+import org.gradle.api.internal.artifacts.configurations.DefaultConfiguration
+
+plugins {
+// id 'java'
+ id 'groovy'
+ id 'net.nemerosa.versioning' version '2.6.1'
+ id 'java-library'
+ id 'maven-publish'
+ id 'signing'
+}
+
+repositories {
+ mavenLocal()
+ // jCenter()
+ maven {
+  name = "forge"
+  url = "http://files.minecraftforge.net/maven"
+ }
+ maven {
+  // because Srg2Source needs an eclipse dependency.
+  name = "eclipse"
+  url = "https://repo.eclipse.org/content/groups/eclipse/"
+ }
+ maven {
+  // because SpecialSource doesnt have a full release
+  name = "sonatype"
+  url = "https://oss.sonatype.org/content/repositories/snapshots/"
+ }
+ mavenCentral()
+ maven {
+  name = "mojang"
+  url = "https://libraries.minecraft.net/"
+ }
+}
+
+group 'org.mcdh'
+version '0.0.1'
+
+sourceSets {
+ foolchain {
+  groovy.srcDirs = ['src/foolchain/src']
+  resources.srcDirs = ['src/foolchain/res']
+ }
+}
+
+configurations { 
+ provided 
+ stripped
+ foolchainCompile.extendsFrom(provided, stripped)
+}
+
+dependencies {
+ foolchainCompile gradleApi()
+ foolchainCompile localGroovy()
+
+ foolchainCompile 'org.ow2.asm:asm-debug-all:5.0.3'
+ foolchainCompile 'com.google.guava:guava:18.0'
+
+ foolchainCompile 'net.sf.opencsv:opencsv:2.3' // reading CSVs.. also used by SpecialSource
+ foolchainCompile 'com.cloudbees:diff4j:1.1' // for difing and patching
+ foolchainCompile 'com.github.abrarsyed.jastyle:jAstyle:1.2' // formatting
+ foolchainCompile 'net.sf.trove4j:trove4j:2.1.0' // because its awesome.
+
+ foolchainCompile 'com.github.jponge:lzma-java:1.3' // replaces the LZMA binary
+ foolchainCompile 'com.nothome:javaxdelta:2.0.1' // GDIFF implementation for BinPatches
+ foolchainCompile 'com.google.code.gson:gson:2.2.4' // Used instead of Argo for buuilding changelog.
+ foolchainCompile 'com.github.tony19:named-regexp:0.2.3' // 1.7 Named regexp features
+
+ foolchainCompile 'net.md-5:SpecialSource:1.7.3' // deobf and reobs
+
+ foolchainCompile 'org.apache.httpcomponents:httpclient:4.3.3'
+ foolchainCompile 'org.apache.httpcomponents:httpmime:4.3.3'
+
+ foolchainCompile 'de.oceanlabs.mcp:RetroGuard:3.6.6'
+ foolchainCompile 'de.oceanlabs.mcp:mcinjector:3.2-SNAPSHOT'
+ foolchainCompile 'net.minecraftforge.srg2source:Srg2Source:3.2-SNAPSHOT'
+
+ foolchainCompile 'net.md-5:SpecialSource:1.7.3'
+ foolchainCompile 'com.cloudbees:diff4j:1.1'
+ foolchainCompile 'com.github.abrarsyed.jastyle:jAstyle:1.2'
+ foolchainCompile 'de.oceanlabs.mcp:RetroGuard:3.6.6'
+ foolchainCompile 'de.oceanlabs.mcp:mcinjector:3.2-SNAPSHOT'
+ // stupid maven
+ foolchainCompile "org.apache.maven.wagon:wagon-ssh:2.2"
+
+ //Stuff used in the GradleStart classes
+ stripped 'com.mojang:authlib:1.5.16'
+ stripped "net.minecraft:launchwrapper:1.11"
+
+ stripped 'com.github.stephenc.high-scale-lib:high-scale-lib:1.1.4'
+}
+
+compileFoolchainJava {
+ options.compilerArgs += ['-Werror']
+}
+
+ext.globalManifest = manifest {
+ attributes(
+  'Created-By' : 'Matthewacon (Matthew Barichello)',
+  'Build-Timestamp' : new SimpleDateFormat("yyyy-MM-dd'['HH:mm:ss.SSSZ']'").format(new Date()),
+  'Build-Revision' : versioning.info.commit,
+  'Build-Jdk' : "${System.properties['java.version']} (${System.properties['java.vendor']} ${System.properties['java.vm.version']})",
+  'Build-OS' : "${System.properties['os.name']} ${System.properties['os.arch']} ${System.properties['os.version']}",
+//  'Premain-Class' : '',
+  'Can-Redefine-Classes' : 'true',
+  'Can-Retransform-Classes' : 'true',
+  'Can-Set-Native-Method-Prefix' : 'true'
+ )
+}
+
+task sourceJar(type: Jar) {
+ description = 'Creates a source jar.'
+ archiveClassifier = 'source'
+ manifest = project.manifest {
+  from globalManifest
+ }
+ from file('LICENSE')
+ from sourceSets.foolchain.allJava
+}
+
+task loadedJar(type: Jar, dependsOn: compileFoolchainJava) {
+ description = 'Creates a loaded jar with the toolchain and all dependencies. [FOR TESTING ONLY!]'
+ baseName = project.name
+ archiveClassifier = 'all'
+ manifest = project.manifest {
+  from globalManifest
+ }
+ from sourceSets.Foolchain.output
+ from {
+  //TODO Preserve license of target jars
+  (configurations.provided + configurations.stripped).collect {
+   it.isDirectory() ? it : zipTree(it)
+  }
+ }
+ from file('LICENSE')
+ exclude 'META-INF/**'
+}
+
+jar {
+ dependsOn(compileFoolchainJava)
+ description = 'Creates a jar with the toolchain and only \'provided\' dependencies.'
+ baseName = project.name
+ manifest = project.manifest {
+  from globalManifest
+ }
+ from sourceSets.foolchain.output
+ from {
+  //TODO Preserve license of target jars
+  configurations.provided.collect {
+   it.isDirectory() ? it : zipTree(it)
+  }
+ }
+ from file('LICENSE')
+ exclude 'META-INF/**'
+}
+
+/*
+artifacts { 
+ provided jar 
+}
+*/
+
+build.dependsOn loadedJar, sourceJar
+
+//https://docs.gradle.org/current/userguide/publishing_maven.html#publishing_maven:install
+publishing {
+ publications {
+  foolchain(MavenPublication) {
+   from components.java
+   //jar task automatically added to publish task
+//   artifact jar
+
+   //POM can only contain dependencies for one artifact 
+//   artifact loadedJar
+//   artifact sourceJar
+
+   pom {
+    name = project.name
+    //Set in project
+//    version = project.version
+    //Uses 'name'
+//    artifactId = project.name
+//    groupId = project.group
+    description = 'A Minecraft development toolchain.'
+    url = 'https://github.com/mcdh/foolchain'
+    licenses {
+     license {
+      name = 'MIT License'
+      url = 'https://github.com/mcdh/foolchain/blob/master/LICENSE'
+     }
+    }
+    developers {
+     developer {
+      id = 'Matthewacon'
+      name = 'Matthew Barichello'
+     }
+    }
+    scm {
+     connection = 'scm:git:git@github.com:mcdh/foolchain.git'
+     url = 'https://github.com/mcdh/foolchain'
+    }
+    withXml {
+     buildPomDependencies(it, configurations.stripped, 'runtime')
+    }
+   }
+  }
+ }
+
+ repositories {
+  maven {
+   name = 'local'
+   url = "file://${System.properties['user.home']}/.m2/"
+  }
+ }
+}
+
+static void buildPomDependencies(XmlProviderImpl root, DefaultConfiguration configuration, String scope) {
+ def dependencies = root.asNode().appendNode('dependencies')
+ configuration.allDependencies.each {
+  def dependency = dependencies.appendNode('dependency')
+  dependency.appendNode('groupId', it.group)
+  dependency.appendNode('artifactId', it.name)
+  dependency.appendNode('version', it.version)
+  dependency.appendNode('scope', scope)
+ }
+}
+
+//https://docs.gradle.org/current/userguide/signing_plugin.html#signing_plugin
+/*
+signing {
+ sign publishing.publications.foolchain
+}
+*/
