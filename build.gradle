@@ -128,7 +128,7 @@ task loadedJar(type: Jar, dependsOn: compileFoolchainJava) {
  manifest = project.manifest {
   from globalManifest
  }
- from sourceSets.Foolchain.output
+ from sourceSets.foolchain.output
  from {
   //TODO Preserve license of target jars
   (configurations.provided + configurations.stripped).collect {

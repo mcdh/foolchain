@@ -13,6 +13,7 @@ import org.mcdh.foolchain.common.Constants
 import org.mcdh.foolchain.common.ToolchainConfigurationExtension
 import org.mcdh.foolchain.common.UserConstants
 import org.mcdh.foolchain.utils.FileLogListener
+import org.mcdh.foolchain.utils.json.version.Version
 
 abstract class PluginBase implements Plugin<Project> {
  public Project project
@@ -22,6 +23,7 @@ abstract class PluginBase implements Plugin<Project> {
  public ToolchainConfigurationExtension toolchainExtension
  //For legacy compatibility
  public UserConstants constants
+ public Version version
 
  @Override
  void apply(final Project project) {
@@ -41,6 +43,10 @@ abstract class PluginBase implements Plugin<Project> {
     getServerRunClass(),
     //{API_GROUP}
     getApiGroup(),
+    //{API_NAME}
+    getApiName(),
+//    //{API_VERSION}
+//    getApiVersion(),
     //{CACHE_DIR}
     "${project.getGradle().getGradleUserHomeDir().getAbsolutePath().replace('\\', '/')}/caches"
   )
@@ -115,6 +121,8 @@ abstract class PluginBase implements Plugin<Project> {
  abstract String getApiGroup();
 
  abstract String getApiName();
+
+// abstract String getApiVersion();
 
  abstract String getClientTweaker();
 

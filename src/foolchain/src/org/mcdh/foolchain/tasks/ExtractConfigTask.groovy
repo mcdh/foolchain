@@ -6,7 +6,7 @@ import org.gradle.api.file.FileCollection
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.TaskAction
-import org.mcdh.toolchain.tasks.utils.CachedTask
+import org.mcdh.foolchain.tasks.utils.CachedTask
 
 import java.util.zip.ZipEntry
 import java.util.zip.ZipException

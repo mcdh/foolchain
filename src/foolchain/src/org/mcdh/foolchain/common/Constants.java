@@ -57,6 +57,7 @@ public final class Constants {
  public static final String CONFIG_MCP_DATA = "mcpSnapshotDataConfig";
  public static final String MCP_JSON_URL = "http://export.mcpbot.bspk.rs/versions.json";
 
+ //Moved to UserConstants
 //    // things in the cache dir.
 //    public static final String NATIVES_DIR      = "{CACHE_DIR}/Minecraft/net/Minecraft/minecraft_natives/{MC_VERSION}";
 //    public static final String MCP_DATA_DIR     = "{CACHE_DIR}/Minecraft/de/oceanlabs/mcp/mcp_{MAPPING_CHANNEL}/{MAPPING_VERSION}/";

@@ -21,13 +21,13 @@ public final class UserConstants {
  public final String
   apiGroup,
   apiName,
+ //  apiVersion,
   buildDir,
   userDev,
   srgDir,
   mcpDataDir,
-  apiVersion,
-  mappingChannel,
-  mappingVersion,
+ //  mappingChannel,
+//  mappingVersion,
   cacheDir,
   fmlVersion;
 
@@ -40,7 +40,10 @@ public final class UserConstants {
   MC_VERSION,
   FML_CACHE_DIR,
   API_PATH,
+  API_VERSION,
   MAPPING_APPENDAGE,
+  MAPPING_CHANNEL,
+  MAPPING_VERSION,
   API_CACHE_DIR,
   SRG_CACHE_DIR,
   USER_DEV_CACHE_DIR,
@@ -66,7 +69,18 @@ public final class UserConstants {
   PARAM_CSV,
   DIRTY_DIR,
   RECOMP_SRC_DIR,
-  RECOMP_CLS_DIR;
+  RECOMP_CLS_DIR,
+  //From Constants
+  NATIVES_DIR,
+  MCP_DATA_DIR,
+  JAR_CLIENT_FRESH,
+  JAR_SERVER_FRESH,
+  JAR_MERGED,
+  FERNFLOWER,
+  EXCEPTOR,
+  ASSETS,
+  JSONS_DIR,
+  VERSION_JSON;
 
  public UserConstants(
   final ToolchainConfigurationExtension extension,
@@ -76,13 +90,13 @@ public final class UserConstants {
   final String runBounceServer,
   final String apiGroup,
   final String apiName,
+//  final String apiVersion,
   final String buildDir,
   final String userDev,
   final String srgDir,
   final String mcpDataDir,
-  final String apiVersion,
-  final String mappingChannel,
-  final String mappingVersion,
+//  final String mappingChannel,
+//  final String mappingVersion,
   final String cacheDir
  ) {
   //Context dependents
@@ -94,9 +108,9 @@ public final class UserConstants {
   this.userDev = userDev;
   this.srgDir = srgDir;
   this.mcpDataDir = mcpDataDir;
-  this.apiVersion = apiVersion;
-  this.mappingChannel = mappingChannel;
-  this.mappingVersion = mappingVersion;
+//  this.apiVersion = apiVersion;
+//  this.mappingChannel = mappingChannel;
+//  this.mappingVersion = mappingVersion;
   this.cacheDir = cacheDir;
   this.fmlVersion = getFmlVersion(extension.version);
 
@@ -108,11 +122,19 @@ public final class UserConstants {
   this.MC_VERSION = extension.version;
   this.FML_CACHE_DIR = cacheDir + "/minecraft/cpw/mods/fml/" + fmlVersion;
   this.API_PATH = apiGroup.replace('.', '/');
-  this.API_CACHE_DIR = cacheDir + "/minecraft/" + API_PATH + "/" + apiName + "/" + apiVersion;
-  this.MAPPING_APPENDAGE = mappingChannel + "/" + mappingVersion + "/";
+  this.API_VERSION = extension.getApiVersion();
+  this.API_CACHE_DIR = cacheDir + "/minecraft/" + API_PATH + "/" + apiName + "/" + API_VERSION;
+  if (extension.mappingsSet) {
+   this.MAPPING_CHANNEL = extension.mappingsChannel;
+   this.MAPPING_VERSION = extension.getMappingsVersion();
+  } else {
+   this.MAPPING_CHANNEL = "";
+   this.MAPPING_VERSION = "";
+  }
+  this.MAPPING_APPENDAGE = MAPPING_CHANNEL + "/" + MAPPING_VERSION + "/";
   this.SRG_CACHE_DIR = API_CACHE_DIR + "/" + MAPPING_APPENDAGE + "srgs";
   this.USER_DEV_CACHE_DIR = API_CACHE_DIR + "/unpacked";
-  this.FORGE_JAVADOC_URL = Constants.FORGE_MAVEN + "/net/minecraftforge/forge/" + apiVersion + "/forge-" + apiVersion + "-javadoc.zip";
+  this.FORGE_JAVADOC_URL = Constants.FORGE_MAVEN + "/net/minecraftforge/forge/" + API_VERSION + "/forge-" + API_VERSION + "-javadoc.zip";
   this.NATIVES_DIR_OLD = buildDir + "/natives";
   this.SOURCES_DIR = buildDir + "/sources";
   this.CONF_DIR = userDev + "/conf";
@@ -135,6 +157,17 @@ public final class UserConstants {
   this.DIRTY_DIR = buildDir + "/dirtyArtifacts";
   this.RECOMP_SRC_DIR = buildDir + "/tmp/recompSrc";
   this.RECOMP_CLS_DIR = buildDir + "/tmp/recompCls";
+  //From Constants
+  this.NATIVES_DIR = cacheDir + "/Minecraft/net/Minecraft/minecraft_natives/" + MC_VERSION;
+  this.MCP_DATA_DIR = cacheDir + "/Minecraft/de/oceanlabs/mcp/mcp_" + MAPPING_CHANNEL + "/" + MAPPING_VERSION + "/";
+  this.JAR_CLIENT_FRESH = cacheDir + "/Minecraft/net/Minecraft/Minecraft/" + MC_VERSION + "/Minecraft-" + MC_VERSION + ".jar";
+  this.JAR_SERVER_FRESH = cacheDir + "/Minecraft/net/Minecraft/minecraft_server/" + MC_VERSION + "/minecraft_server-" + MC_VERSION + ".jar";
+  this.JAR_MERGED = cacheDir + "/Minecraft/net/Minecraft/minecraft_merged/" + MC_VERSION + "/minecraft_merged-" + MC_VERSION + ".jar";
+  this.FERNFLOWER = cacheDir + "/Minecraft/fernflower-fixed.jar";
+  this.EXCEPTOR = cacheDir + "/Minecraft/exceptor.jar";
+  this.ASSETS = cacheDir + "/Minecraft/assets";
+  this.JSONS_DIR = cacheDir + "/Minecraft/versionJsons";
+  this.VERSION_JSON = JSONS_DIR + "/" + MC_VERSION + ".json";
  }
 
  private static String getFmlVersion(final String mcVer) {

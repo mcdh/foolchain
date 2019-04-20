@@ -1,9 +1,17 @@
 package org.mcdh.foolchain.plugins
 
+import com.google.common.base.Throwables
 import org.gradle.api.Action
 import org.gradle.api.Task
+import org.gradle.api.artifacts.Configuration
+import org.gradle.api.artifacts.dsl.DependencyHandler
+import org.gradle.api.logging.Logger
+import org.mcdh.foolchain.common.Constants
+import org.mcdh.foolchain.tasks.ExtractConfigTask
+import org.mcdh.foolchain.common.UserConstants
+import org.mcdh.foolchain.utils.json.JsonFactory
 
-import org.mcdh.toolchain.tasks.ExtractConfigTask
+import static org.mcdh.foolchain.common.UserConstants.*
 
 //Sets up an environment with FML and Forge
 class Forge extends PluginBase {
@@ -33,6 +41,26 @@ class Forge extends PluginBase {
  }
 
  @Override
+ String getClientTweaker() {
+  return 'fml.common.launcher.FMLTweaker'
+ }
+
+ @Override
+ String getServerTweaker() {
+  return 'fml.common.launcher.FMLServerTweaker'
+ }
+
+ @Override
+ String getClientRunClass() {
+  return 'net.minecraft.launchwrapper.Launch'
+ }
+
+ @Override
+ String getServerRunClass() {
+  return getClientRunClass()
+ }
+
+ @Override
  void apply() {
   applyExternalPlugin('java')
   applyExternalPlugin('maven')
@@ -42,7 +70,6 @@ class Forge extends PluginBase {
   hasGroovyBefore = plugins.hasPlugin("groovy")
 
   configureDeps()
-
  }
 
  protected void configureDeps() {
@@ -70,7 +97,7 @@ class Forge extends PluginBase {
 
   // special native stuff
   ExtractConfigTask extractNatives = makeTask("extractNatives", ExtractConfigTask.class)
-  extractNatives.setOut(delayedFile(Constants.NATIVES_DIR))
+  extractNatives.setOut(delayedFile(constants.NATIVES_DIR))
   extractNatives.setConfig(CONFIG_NATIVES)
   extractNatives.exclude("META-INF/**", "META-INF/**")
   extractNatives.doesCache()
@@ -86,5 +113,45 @@ class Forge extends PluginBase {
   project.getDependencies().add("compile", project.getConfigurations().getByName(CONFIG_DEPS))
   project.getDependencies().add("compile", project.getConfigurations().getByName(CONFIG_MC))
   project.getDependencies().add("runtime", project.getConfigurations().getByName(CONFIG_START))
+ }
+
+ private void readAndApplyJson(File file, String depConfig, String nativeConfig, Logger log) {
+  if (version == null) {
+   try {
+    version = JsonFactory.loadVersion(file, project.file(constants.JSONS_DIR))
+   } catch (Exception e) {
+    log.error("" + file + " could not be parsed")
+    Throwables.propagate(e)
+   }
+  }
+
+  if (hasAppliedJson) {
+   return
+  }
+
+  // apply the dep info.
+  DependencyHandler handler = project.getDependencies()
+
+  // actual dependencies
+  if (project.getConfigurations().getByName(depConfig).getState() == Configuration.State.UNRESOLVED) {
+   for (org.mcdh.foolchain.utils.json.version.Library lib : version.getLibraries()) {
+    if (lib.natives == null)
+     handler.add(depConfig, lib.getArtifactName())
+   }
+  } else
+   log.debug("RESOLVED: " + depConfig)
+
+  // the natives
+  if (project.getConfigurations().getByName(nativeConfig).getState() == Configuration.State.UNRESOLVED) {
+   for (org.mcdh.foolchain.utils.json.version.Library lib : version.getLibraries()) {
+    if (lib.natives != null) {
+     handler.add(nativeConfig, lib.getArtifactName())
+    }
+   }
+  } else {
+   log.debug("RESOLVED: " + nativeConfig)
+  }
+
+  hasAppliedJson = true
  }
 }

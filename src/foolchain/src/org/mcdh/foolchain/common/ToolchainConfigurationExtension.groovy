@@ -1,6 +1,7 @@
 package org.mcdh.foolchain.common
 
 import com.google.common.base.Strings
+import org.gradle.api.ProjectConfigurationException
 
 class ToolchainConfigurationExtension {
  public String version = "null"
@@ -114,5 +115,16 @@ class ToolchainConfigurationExtension {
   Arrays.sort(array)
   final int foundIndex = Arrays.binarySearch(array, key)
   return foundIndex >= 0 && array[foundIndex] == key
+ }
+
+ String getMappingsVersion() {
+  return customVersion == null ? "${mappingsVersion}" : customVersion
+ }
+
+ String getApiVersion() {
+  if (apiVersion == null) {
+   throw new ProjectConfigurationException("You must set the Minecraft Version!", new NullPointerException())
+  }
+  return apiVersion
  }
 }
